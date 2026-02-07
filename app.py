@@ -19,13 +19,17 @@ def download():
 
     filename = f"/tmp/{uuid.uuid4()}.mp4"
 
-    cmd = [
-        "yt-dlp",
-        "-f", "mp4",
-        "--no-playlist",
-        "-o", filename,
-        url
-    ]
+cmd = [
+    "yt-dlp",
+    "--no-playlist",
+    "--no-check-certificate",
+    "--socket-timeout", "30",
+    "--retries", "3",
+    "-f", "bv*[height<=360]+ba/b[height<=360]",
+    "-o", filename,
+    url
+]
+
 
     try:
         result = subprocess.run(
