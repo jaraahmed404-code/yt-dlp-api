@@ -1,71 +1,34 @@
-from flask import Flask, request, jsonify
-import subprocess
-import uuid
-import os
-import threading
+from fastapi import FastAPI
+import yt_dlp
 
-lock = threading.Lock()
-@app.route("/download", methods=["POST"])
-def download():
-    with lock:
-        ...
+app = FastAPI()
 
 
-app = Flask(__name__)
-
-@app.route("/", methods=["GET"])
-def home():
-    return "YT-DLP API OK"
-
-@app.route("/download", methods=["POST"])
-def download():
-    data = request.json or {}
-    url = data.get("url")
-
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
-
-    filename = f"/tmp/{uuid.uuid4()}.mp4"
-
-cmd = [
-    "yt-dlp",
-    "--no-playlist",
-    "--no-check-certificate",
-    "--socket-timeout", "30",
-    "--retries", "3",
-    "-f", "bv*[height<=360]+ba/b[height<=360]",
-    "-o", filename,
-    url
-]
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600
-        )
-if result.returncode != 0:
-    return jsonify({
-        "error": "yt-dlp failed",
-        "stderr": result.stderr,
-        "stdout": result.stdout,
-        "cmd": " ".join(cmd)
-    }), 500
+@app.get("/info")
+def info(url: str):
+    ydl_opts = {}
 
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "Download timeout"}), 504
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    return jsonify({
-        "file": filename,
-        "status": "done"
-    })
+    return info
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+@app.post("/download")
+def download(data: dict):
+    url = data["url"]
+
+    ydl_opts = {
+        "format": "best",
+        "outtmpl": "downloads/%(title)s.%(ext)s"
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    return {"status": "downloaded"}
