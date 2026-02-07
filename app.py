@@ -2,6 +2,14 @@ from flask import Flask, request, jsonify
 import subprocess
 import uuid
 import os
+import threading
+
+lock = threading.Lock()
+@app.route("/download", methods=["POST"])
+def download():
+    with lock:
+        ...
+
 
 app = Flask(__name__)
 
