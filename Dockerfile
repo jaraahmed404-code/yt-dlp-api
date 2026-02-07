@@ -1,11 +1,12 @@
 FROM python:3.11-slim
 
-RUN pip install yt-dlp flask
-
 WORKDIR /app
 
-COPY app.py .
+RUN apt update && apt install -y ffmpeg
 
-EXPOSE 8080
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-CMD ["python", "app.py"]
+COPY . .
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
