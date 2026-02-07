@@ -11,7 +11,7 @@ def home():
 
 @app.route("/download", methods=["POST"])
 def download():
-    data = request.json
+    data = request.json or {}
     url = data.get("url")
 
     if not url:
@@ -19,12 +19,34 @@ def download():
 
     filename = f"/tmp/{uuid.uuid4()}.mp4"
 
-    cmd = ["yt-dlp", "-f", "mp4", "-o", filename, url]
+    cmd = [
+        "yt-dlp",
+        "-f", "mp4",
+        "--no-playlist",
+        "-o", filename,
+        url
+    ]
 
     try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": "Download failed"}), 500
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600
+        )
+
+        if result.returncode != 0:
+            return jsonify({
+                "error": "yt-dlp failed",
+                "stderr": result.stderr,
+                "stdout": result.stdout
+            }), 500
+
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "Download timeout"}), 504
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
     return jsonify({
         "file": filename,
