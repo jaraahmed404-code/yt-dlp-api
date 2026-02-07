@@ -34,13 +34,13 @@ def download():
             text=True,
             timeout=600
         )
-
-        if result.returncode != 0:
-            return jsonify({
-                "error": "yt-dlp failed",
-                "stderr": result.stderr,
-                "stdout": result.stdout
-            }), 500
+if result.returncode != 0:
+    return jsonify({
+        "error": "yt-dlp failed",
+        "stderr": result.stderr,
+        "stdout": result.stdout,
+        "cmd": " ".join(cmd)
+    }), 500
 
     except subprocess.TimeoutExpired:
         return jsonify({"error": "Download timeout"}), 504
